@@ -1,0 +1,49 @@
+name: Upload to AWS S3 using OIDC
+
+# Triggers: on push to main and manual dispatch
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering
+
+# Permissions needed for OIDC token generation
+permissions:
+  id-token: write # Required to fetch the OIDC token
+  contents: read # Required to checkout the code (though not strictly needed here)
+
+jobs:
+  upload-to-s3:
+    name: Create file and Upload to S3
+    # Specify the environment to use
+    environment: aws-deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code (optional)
+        uses: actions/checkout@v4
+        # We don't really need the code for this example, but it's common practice
+
+      - name: Configure AWS Credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }} # Use variable from environment
+          aws-region: ${{ vars.AWS_REGION }} # Use variable from environment
+
+      - name: Create output file
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          COMMIT_SHA=${{ github.sha }}
+          MY_SECRET="${{ secrets.MY_SECRET_VALUE }}" # Use secret from environment
+
+          echo "File created at: ${TIMESTAMP}" > output.txt
+          echo "Commit SHA: ${COMMIT_SHA}" >> output.txt
+          echo "My Secret Value: ${MY_SECRET}" >> output.txt
+          echo "--- File Content End ---" >> output.txt
+          echo "File content:"
+          cat output.txt
+
+      - name: Upload file to S3
+        run: |
+          aws s3 cp output.txt s3://${{ vars.S3_BUCKET_NAME }}/${{ vars.S3_OBJECT_KEY }}
+          echo "File uploaded successfully to s3://${{ vars.S3_BUCKET_NAME }}/${{ vars.S3_OBJECT_KEY }}"
