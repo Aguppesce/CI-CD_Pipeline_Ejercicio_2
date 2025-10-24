@@ -47,4 +47,3 @@ jobs:
         run: |
           aws s3 cp output.txt s3://${{ vars.S3_BUCKET_NAME }}/${{ vars.S3_OBJECT_KEY }}
           echo "File uploaded successfully to s3://${{ vars.S3_BUCKET_NAME }}/${{ vars.S3_OBJECT_KEY }}"        
-        # Comentario test workflow testing secret value
